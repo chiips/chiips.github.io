@@ -70,7 +70,6 @@ lim = 3 #number of requests
 p = 1 #per seconds
 
 
-
 @app.route('/')
 @ratelimit(limit=lim, per=p)
 def index():
