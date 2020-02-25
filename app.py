@@ -55,13 +55,30 @@ def ratelimit(limit, per=300, send_x_headers=True,
         return update_wrapper(rate_limited, f)
     return decorator
 
+@app.after_request
+def inject_x_rate_headers(response):
+    limit = get_rate_limit()
+    if limit and limit.send_x_headers:
+        h = response.headers
+        h.add('X-RateLimit-Remaining', str(limit.remaining))
+        h.add('X-RateLimit-Limit', str(limit.limit))
+        h.add('X-RateLimit-Reset', str(limit.reset))
+    return response
+
+#rate limit values
+lim = 3 #number of requests
+p = 1 #per seconds
+
+
 
 @app.route('/')
+@ratelimit(limit=lim, per=p)
 def index():
     return 'Welcome to EQ Works 😎'
 
 
 @app.route('/events/hourly')
+@ratelimit(limit=lim, per=p)
 def events_hourly():
     return queryHelper('''
         SELECT date, hour, events
@@ -72,6 +89,7 @@ def events_hourly():
 
 
 @app.route('/events/daily')
+@ratelimit(limit=lim, per=p)
 def events_daily():
     return queryHelper('''
         SELECT date, SUM(events) AS events
@@ -83,6 +101,7 @@ def events_daily():
 
 
 @app.route('/stats/hourly')
+@ratelimit(limit=lim, per=p)
 def stats_hourly():
     return queryHelper('''
         SELECT date, hour, impressions, clicks, revenue
@@ -93,6 +112,7 @@ def stats_hourly():
 
 
 @app.route('/stats/daily')
+@ratelimit(limit=lim, per=p)
 def stats_daily():
     return queryHelper('''
         SELECT date,
@@ -106,6 +126,7 @@ def stats_daily():
     ''')
 
 @app.route('/poi')
+@ratelimit(limit=lim, per=p)
 def poi():
     return queryHelper('''
         SELECT *
